@@ -4,7 +4,7 @@ import type { Project } from '../types';
 import { deleteProject, listProjects, storageAvailable } from '../lib/storage';
 import { readProjectFile } from '../lib/export';
 import { Thumb } from '../components/Thumb';
-import { FilePick, Icon } from '../components/ui';
+import { ConfirmDelete, FilePick, Icon } from '../components/ui';
 
 export function ProjectsScreen() {
   const { loadProject, notify, go } = useStore();
@@ -55,17 +55,12 @@ export function ProjectsScreen() {
                   {p.conceptName} · {new Date(p.updatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                 </div>
               </div>
-              <button
-                className="icon-btn"
-                title="Excluir"
-                onClick={async () => {
-                  if (!confirm(`Excluir “${p.name}”?`)) return;
+              <ConfirmDelete
+                onConfirm={async () => {
                   await deleteProject(p.id);
                   refresh();
                 }}
-              >
-                <Icon name="trash" />
-              </button>
+              />
             </div>
           </div>
         ))}

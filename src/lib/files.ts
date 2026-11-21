@@ -52,7 +52,38 @@ export async function dataUrlToAsset(src: string, name: string, kind: Asset['kin
   return { id: uid(), name, kind, src, width, height };
 }
 
-export function downloadBlob(blob: Blob, filename: string) {
+type DownloadsNS = { save: (r: { filename: string; data: Blob | string }) => Promise<{ status: string }> };
+type ClaudeRuntime = { use: (name: string) => Promise<unknown> };
+
+let downloadsNS: Promise<DownloadsNS | null> | null = null;
+
+/** Permissão "downloads" do artefato Claude (null quando o app roda fora do artefato). */
+function getDownloads(): Promise<DownloadsNS | null> {
+  if (!downloadsNS) {
+    const c = (window as unknown as { claude?: ClaudeRuntime }).claude;
+    downloadsNS = c?.use ? (c.use('downloads') as Promise<DownloadsNS | null>).catch(() => null) : Promise.resolve(null);
+  }
+  return downloadsNS;
+}
+
+export class SaveDeclined extends Error {}
+
+/**
+ * Entrega um arquivo ao usuário. Dentro do artefato usa a permissão "downloads"
+ * (o usuário confirma o salvamento); fora dele, um download comum do navegador.
+ */
+export async function saveFile(blob: Blob, filename: string): Promise<void> {
+  const dl = await getDownloads();
+  if (dl) {
+    try {
+      await dl.save({ filename, data: blob });
+      return;
+    } catch (e) {
+      const code = (e as { code?: string })?.code;
+      if (code === 'declined') throw new SaveDeclined('Download cancelado.');
+      if (code && code !== 'unavailable' && code !== 'not_granted') throw new Error((e as Error).message || code);
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -63,13 +94,8 @@ export function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-export function downloadDataUrl(dataUrl: string, filename: string) {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  return (await fetch(dataUrl)).blob();
 }
 
 export const slug = (s: string) =>

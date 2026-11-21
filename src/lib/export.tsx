@@ -6,7 +6,7 @@ import { StaticArtboard, containBox, coverCrop, gradientPoints } from '../compon
 import { getCachedImage, preloadImages } from './imageCache';
 import { ensureFonts } from '../engine/fonts';
 import { wrapLines, lineWidth } from '../engine/text';
-import { downloadBlob, downloadDataUrl, slug } from './files';
+import { dataUrlToBlob, saveFile, slug } from './files';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
 
@@ -56,7 +56,7 @@ export async function renderArtboardPNG(ab: Artboard, assets: Record<string, Ass
 export async function exportPNG(project: Project, format: 'feed' | 'story', pixelRatio = 1) {
   const url = await renderArtboardPNG(project[format], project.assets, pixelRatio);
   const ab = project[format];
-  downloadDataUrl(url, `${slug(project.name)}-${format}-${ab.width * pixelRatio}x${ab.height * pixelRatio}.png`);
+  await saveFile(await dataUrlToBlob(url), `${slug(project.name)}-${format}-${ab.width * pixelRatio}x${ab.height * pixelRatio}.png`);
 }
 
 // ------------------------------------------------------------------ SVG
@@ -167,14 +167,14 @@ ${body.join('\n')}
 
 export async function exportSVG(project: Project, format: 'feed' | 'story') {
   const svg = await artboardToSVG(project[format], project.assets);
-  downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), `${slug(project.name)}-${format}.svg`);
+  await saveFile(new Blob([svg], { type: 'image/svg+xml' }), `${slug(project.name)}-${format}.svg`);
 }
 
 // ------------------------------------------------------------------ arquivo de projeto
 
-export function exportProjectFile(project: Project) {
+export async function exportProjectFile(project: Project) {
   const data = JSON.stringify({ app: 'studio-design-ai', version: 1, project }, null, 0);
-  downloadBlob(new Blob([data], { type: 'application/json' }), `${slug(project.name)}.studio.json`);
+  await saveFile(new Blob([data], { type: 'application/json' }), `${slug(project.name)}.studio.json`);
 }
 
 export async function readProjectFile(file: File): Promise<Project> {

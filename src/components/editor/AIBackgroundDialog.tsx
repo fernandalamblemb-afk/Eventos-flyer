@@ -18,6 +18,8 @@ export function AIBackgroundDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const configured = isImageGenConfigured(cfg);
+  // Dentro do artefato do Claude a política de segurança bloqueia chamadas a APIs externas.
+  const inArtifact = !!(window as unknown as { claude?: unknown }).claude;
 
   const run = async () => {
     saveImageGenConfig(cfg);
@@ -100,13 +102,18 @@ export function AIBackgroundDialog({ onClose }: { onClose: () => void }) {
           <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 p-3 text-[11px] leading-relaxed text-amber-200/80">
             Integração preparada, mas depende de configuração externa. A chave fica salva só neste navegador e é enviada diretamente do navegador ao provedor — para produção, use um endpoint próprio no servidor para não expor a chave. Sem API configurada, todo o restante do app funciona normalmente (layouts são vetoriais).
           </div>
+          {inArtifact && (
+            <div className="rounded-lg border border-red-900/50 bg-red-950/30 p-3 text-[11px] leading-relaxed text-red-200/80">
+              Indisponível nesta versão (artefato do Claude): o artefato bloqueia conexões com APIs externas. Use a versão hospedada (GitHub Pages) para gerar fundos com IA.
+            </div>
+          )}
           {err && <p className="text-xs text-red-400">{err}</p>}
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <button className="btn-ghost" onClick={onClose}>
             Fechar
           </button>
-          <button className="btn-primary" disabled={!configured || busy} onClick={run}>
+          <button className="btn-primary" disabled={!configured || busy || inArtifact} onClick={run}>
             <Icon name="sparkles" /> {busy ? 'Gerando…' : `Gerar fundo (${format === 'feed' ? 'Feed' : 'Story'})`}
           </button>
         </div>

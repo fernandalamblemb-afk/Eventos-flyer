@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import type { Brand, Motif, Palette, StyleId } from '../types';
-import { ColorInput, FilePick, Icon } from '../components/ui';
+import { ColorInput, ConfirmDelete, FilePick, Icon } from '../components/ui';
 import { FONTS } from '../engine/fonts';
 import { PALETTES, extractColors, paletteFromColors } from '../engine/palettes';
 import { STYLES } from '../engine/compose';
@@ -54,7 +54,6 @@ export function BrandsScreen() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Excluir esta marca?')) return;
     await deleteBrand(id);
     await refresh();
   };
@@ -225,9 +224,7 @@ export function BrandsScreen() {
               <button className="btn-outline flex-1 text-xs" onClick={() => setEdit(structuredClone(b))}>
                 Editar
               </button>
-              <button className="icon-btn" title="Excluir" onClick={() => remove(b.id)}>
-                <Icon name="trash" />
-              </button>
+              <ConfirmDelete onConfirm={() => remove(b.id)} />
             </div>
           </div>
         ))}

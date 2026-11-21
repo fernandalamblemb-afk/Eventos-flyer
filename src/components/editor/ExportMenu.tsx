@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import { exportPNG, exportProjectFile, exportSVG } from '../../lib/export';
 import { saveProject } from '../../lib/storage';
+import { SaveDeclined } from '../../lib/files';
 import { Icon } from '../ui';
 
 export function useSaveProject() {
@@ -41,6 +42,7 @@ export function ExportMenu() {
     try {
       await fn();
     } catch (e) {
+      if (e instanceof SaveDeclined) return notify('Download cancelado.', 'info');
       console.error(e);
       notify('Falha na exportação.', 'err');
     } finally {

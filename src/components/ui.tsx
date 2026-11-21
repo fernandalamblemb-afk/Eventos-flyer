@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 // Ícones de traço fino (inline, sem dependências)
 const paths: Record<string, string> = {
@@ -169,5 +169,24 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
         </button>
       ))}
     </div>
+  );
+}
+
+/** Botão de exclusão em dois cliques (o artefato não permite janelas confirm()). */
+export function ConfirmDelete({ onConfirm, title = 'Excluir' }: { onConfirm: () => void; title?: string }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 3000);
+    return () => clearTimeout(t);
+  }, [armed]);
+  return armed ? (
+    <button className="rounded-md bg-red-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-red-500" onClick={onConfirm}>
+      Confirmar exclusão
+    </button>
+  ) : (
+    <button className="icon-btn" title={title} onClick={() => setArmed(true)}>
+      <Icon name="trash" />
+    </button>
   );
 }

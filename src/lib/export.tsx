@@ -6,7 +6,7 @@ import { StaticArtboard, containBox, coverCrop, gradientPoints } from '../compon
 import { getCachedImage, preloadImages } from './imageCache';
 import { ensureFonts } from '../engine/fonts';
 import { wrapLines, lineWidth } from '../engine/text';
-import { dataUrlToBlob, saveFile, slug } from './files';
+import { saveFile, slug } from './files';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
 
@@ -14,7 +14,7 @@ const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r(null)))
  * Renderiza a prancheta fora da tela, em resolução real (1080 px de largura × pixelRatio),
  * usando o mesmo renderizador do editor.
  */
-export async function renderArtboardPNG(ab: Artboard, assets: Record<string, Asset>, pixelRatio = 1): Promise<string> {
+export async function renderArtboardPNG(ab: Artboard, assets: Record<string, Asset>, pixelRatio = 1): Promise<Blob> {
   await ensureFonts();
   await preloadImages(Object.values(assets).map((a) => a.src));
   const host = document.createElement('div');
@@ -46,7 +46,11 @@ export async function renderArtboardPNG(ab: Artboard, assets: Record<string, Ass
     await new Promise((r) => setTimeout(r, 60));
     const s = stage as unknown as Konva.Stage;
     s.draw();
-    return s.toDataURL({ pixelRatio, mimeType: 'image/png' });
+    // Gera o arquivo direto do canvas (sem fetch de data: URL, bloqueado no artefato).
+    const canvas = s.toCanvas({ pixelRatio });
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('O navegador não gerou o PNG.'))), 'image/png'),
+    );
   } finally {
     root.unmount();
     host.remove();
@@ -54,9 +58,9 @@ export async function renderArtboardPNG(ab: Artboard, assets: Record<string, Ass
 }
 
 export async function exportPNG(project: Project, format: 'feed' | 'story', pixelRatio = 1) {
-  const url = await renderArtboardPNG(project[format], project.assets, pixelRatio);
+  const blob = await renderArtboardPNG(project[format], project.assets, pixelRatio);
   const ab = project[format];
-  await saveFile(await dataUrlToBlob(url), `${slug(project.name)}-${format}-${ab.width * pixelRatio}x${ab.height * pixelRatio}.png`);
+  await saveFile(blob, `${slug(project.name)}-${format}-${ab.width * pixelRatio}x${ab.height * pixelRatio}.png`);
 }
 
 // ------------------------------------------------------------------ SVG

@@ -94,9 +94,6 @@ export async function saveFile(blob: Blob, filename: string): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
-  return (await fetch(dataUrl)).blob();
-}
 
 export const slug = (s: string) =>
   s

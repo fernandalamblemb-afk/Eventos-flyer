@@ -44,7 +44,8 @@ export function ExportMenu() {
     } catch (e) {
       if (e instanceof SaveDeclined) return notify('Download cancelado.', 'info');
       console.error(e);
-      notify('Falha na exportação.', 'err');
+      const msg = (e as { message?: string; code?: string })?.message || (e as { code?: string })?.code || '';
+      notify(`Falha na exportação${msg ? `: ${msg}` : '.'}`, 'err');
     } finally {
       setBusy(null);
     }
